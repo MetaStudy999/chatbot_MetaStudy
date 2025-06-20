@@ -4,7 +4,6 @@ import json
 import matplotlib.pyplot as plt
 from openai import OpenAI
 
-# 페이지 설정
 st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
 st.title("😂 배꼽봇 (BaekkopBot)")
 
@@ -52,7 +51,6 @@ if not openai_api_key:
 else:
     client = OpenAI(api_key=openai_api_key)
 
-    # 환영 인사 + 예시 질문
     greetings = [
         "🌱 지구를 아끼는 당신, 오늘도 배꼽은 챙기셨나요?\n♻️ 웃음은 무한 재생 가능 자원이에요!\n😄 지금부터 탄소 대신 개그를 배출합니다!",
         "🌍 환영합니다! 지구를 위한 작은 미소, 여기서 시작돼요.\n🚲 오늘도 배꼽봇과 함께 웃음 탄소중립 도전!\n😆 '지구야 미안해~ 나 오늘 또 웃을 거야!'",
@@ -66,19 +64,23 @@ else:
         "세계에서 제일 웃긴 농담 알려줘!"
     ]
 
-    # 상태 초기화
-    if "messages" not in st.session_state:
+    # 최초 1회만 초기화
+    if "initialized" not in st.session_state:
         st.session_state.messages = [{"role": "system", "content": system_prompt}]
         st.session_state.saved_jokes = []
         st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
+        st.session_state.initialized = True
+        st.session_state.greeted = False
 
-        # 환영 메시지 + 말풍선 버튼
+    # 환영 인사 + 말풍선은 greeted가 False일 때만 출력
+    if not st.session_state.get("greeted", False):
         with st.chat_message("assistant"):
             st.markdown(random.choice(greetings))
         st.markdown("#### 💬 이런 질문 해볼까요?")
         for i, q in enumerate(example_questions):
             if st.button(f"💭 {q}", key=f"btn{i}"):
                 st.session_state.messages.append({"role": "user", "content": q})
+                st.session_state.greeted = True
                 st.experimental_rerun()
 
     # 사이드바 저장 유머 보기
@@ -121,7 +123,6 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # GPT 응답
         stream = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=st.session_state.messages,
