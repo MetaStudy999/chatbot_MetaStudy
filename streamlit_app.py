@@ -7,7 +7,7 @@ st.title("😂 배꼽봇 (BaekkopBot)")
 st.markdown("""
 **세계 최초 배꼽주의 유머봇 등장!**  
 지루한 일상에 웃음을 쏘아올리는 한 줄 개그 장인, 배꼽봇을 만나보세요.  
-KR US JP FR DE 어떤 나라든, 어떤 취향이든 **맞춤형 개그 처방** 나갑니다!  
+🇺🇸 🇰🇷 어떤 나라든, 어떤 취향이든 **맞춤형 개그 처방** 나갑니다!  
 **“배꼽봇, 유머 퀴즈 하나 줘!”** 라고 말해보세요 😆
 
 ---
@@ -33,15 +33,29 @@ else:
     당신은 배꼽이 빠지게 하는 프로페셔널 유머 챗봇입니다.
     """
 
+    # 세션 상태 초기화
     if "messages" not in st.session_state:
         st.session_state.messages = [{"role": "system", "content": system_prompt}]
+        st.session_state["greeted"] = False
 
+    # API 키 입력 이후 처음 접속 시 환영 메시지 출력
+    if not st.session_state["greeted"]:
+        with st.chat_message("assistant"):
+            st.markdown("""
+            🎉 **어서오세요! 배꼽봇에 오신 것을 환영합니다!**  
+            오늘도 배꼽 챙기셨죠?  
+            이곳은 ‘웃다가 심장 멈출 뻔함’이 일상인 곳이에요 🤣  
+            유머가 필요할 땐 **"웃겨줘"**, 퀴즈가 필요할 땐 **"유머 퀴즈 하나 줘"** 라고 말해보세요!
+            """)
+        st.session_state["greeted"] = True
+
+    # 기존 채팅 내용 출력
     for message in st.session_state.messages[1:]:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
+    # 사용자 입력 받기
     if prompt := st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂"):
-
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -54,5 +68,4 @@ else:
 
         with st.chat_message("assistant"):
             response = st.write_stream(stream)
-
         st.session_state.messages.append({"role": "assistant", "content": response})
