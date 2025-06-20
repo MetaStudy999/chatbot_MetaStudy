@@ -1,51 +1,54 @@
 import streamlit as st
 from openai import OpenAI
 
-# 챗봇 이름 및 설명
-st.set_page_config(page_title="배꼽봇 😂", page_icon="😂")
+st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
 st.title("😂 배꼽봇 (BaekkopBot)")
+
 st.markdown("""
-**“당신을 웃게 만드는 단 한 명의 개그 친구, 배꼽봇!”**  
-피곤한 하루에 한 줄의 농담, 스트레스를 날려줄 찐친 유머 챗봇!  
-당신의 연령, 말투, 취향에 맞춘 ‘맞춤형 웃음 처방’으로 하루를 새롭게 시작하세요.  
-기분 안 좋을 땐? **“배꼽봇, 나 좀 웃겨줘!”** 한마디면 OK!
+**세계 최초 배꼽주의 유머봇 등장!**  
+지루한 일상에 웃음을 쏘아올리는 한 줄 개그 장인, 배꼽봇을 만나보세요.  
+🇺🇸 🇰🇷 🇯🇵 🇫🇷 어떤 나라든, 어떤 취향이든 **맞춤형 개그 처방** 나갑니다!  
+**“배꼽봇, 유머 퀴즈 하나 줘!”** 라고 말해보세요 😆
 
 ---
 
-💡 이 앱은 OpenAI GPT-4o 모델을 기반으로 작동하며, 유머 콘텐츠를 생성합니다.  
-🔑 사용을 위해 [OpenAI API 키](https://platform.openai.com/account/api-keys)를 입력해 주세요.
+🔑 먼저 [OpenAI API Key](https://platform.openai.com/account/api-keys)를 입력하세요.
 """)
 
-# API 키 입력
 openai_api_key = st.text_input("OpenAI API Key", type="password")
 if not openai_api_key:
     st.info("Please add your OpenAI API key to continue.", icon="🗝️")
 else:
     client = OpenAI(api_key=openai_api_key)
 
-    # 세션 상태 초기화
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    system_prompt = """
+    당신은 세계 최고로 창의적이고 유머 감각이 넘치는 AI 개그 챗봇입니다. 당신의 이름은 '배꼽봇'입니다.
+    당신의 주요 역할:
+    1. 사용자가 말을 걸면, 대화를 유쾌하게 이끌고 1~2줄의 재치 있는 농담이나 유머를 추가합니다.
+    2. 때때로 창의적이고 재밌는 '유머 퀴즈'를 냅니다. (틀려도 웃기게 반응해주세요.)
+    3. 사용자 연령, 말투, 국가에 따라 맞춤형 개그 스타일로 반응합니다.
+    4. 유머 유형은 아재개그, 넌센스 퀴즈, 밈 개그, 블랙유머(수위 조절), 짧은 스토리형 개그까지 다양합니다.
+    5. 사용자가 '기분이 안 좋아' 같은 말을 하면, 웃긴 위로 + 엉뚱한 유머 퀴즈로 기분을 올려줍니다.
+    반드시 모든 응답에 약간의 유머 또는 재치 있는 한 줄을 넣으세요.
+    당신은 배꼽이 빠지게 하는 프로페셔널 유머 챗봇입니다.
+    """
 
-    # 이전 메시지 출력
-    for message in st.session_state.messages:
+    if "messages" not in st.session_state:
+        st.session_state.messages = [{"role": "system", "content": system_prompt}]
+
+    for message in st.session_state.messages[1:]:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # 입력창 처리
-    if prompt := st.chat_input("웃음이 필요할 땐? 여기에 써 보세요! 😆"):
+    if prompt := st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂"):
 
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # GPT 응답 생성 및 출력
         stream = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
+            messages=st.session_state.messages,
             stream=True,
         )
 
