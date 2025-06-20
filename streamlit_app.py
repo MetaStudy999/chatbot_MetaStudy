@@ -3,7 +3,6 @@ import random
 import json
 import matplotlib.pyplot as plt
 from openai import OpenAI
-from streamlit.runtime.scriptrunner import rerun  # ✅ 최신 rerun 사용
 
 st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
 st.title("😂 배꼽봇 (BaekkopBot)")
@@ -82,7 +81,7 @@ else:
             if st.button(f"💭 {q}", key=f"btn{i}"):
                 st.session_state.messages.append({"role": "user", "content": q})
                 st.session_state.greeted = True
-                rerun()  # ✅ 최신 rerun 사용
+                st.experimental_rerun()  # ✅ 안정적 rerun 사용
 
     # 사이드바 저장 유머 보기
     with st.sidebar:
