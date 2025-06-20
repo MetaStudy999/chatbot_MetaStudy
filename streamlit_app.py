@@ -4,7 +4,7 @@ from openai import OpenAI
 # 챗봇 이름 및 설명
 st.set_page_config(page_title="배꼽봇 😂", page_icon="😂")
 st.title("😂 배꼽봇 (BaekkopBot)")
-st.markdown(
+st.markdown("""
 **“당신을 웃게 만드는 단 한 명의 개그 친구, 배꼽봇!”**  
 피곤한 하루에 한 줄의 농담, 스트레스를 날려줄 찐친 유머 챗봇!  
 당신의 연령, 말투, 취향에 맞춘 ‘맞춤형 웃음 처방’으로 하루를 새롭게 시작하세요.  
@@ -14,7 +14,7 @@ st.markdown(
 
 💡 이 앱은 OpenAI GPT-4o 모델을 기반으로 작동하며, 유머 콘텐츠를 생성합니다.  
 🔑 사용을 위해 [OpenAI API 키](https://platform.openai.com/account/api-keys)를 입력해 주세요.
-)
+""")
 
 # API 키 입력
 openai_api_key = st.text_input("OpenAI API Key", type="password")
