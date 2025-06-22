@@ -139,7 +139,7 @@ if prompt:
     with st.chat_message("assistant"):
         copy_col, response_col = st.columns([0.1, 0.9])
         with response_col:
-            with st.spinner("배꼽 터지는 중... 🤣"):
+        with st.spinner("배꼽 터지는 중... 🤣"):
             stream = client.chat.completions.create(
                 model="gpt-4o",
                 messages=st.session_state.messages,
