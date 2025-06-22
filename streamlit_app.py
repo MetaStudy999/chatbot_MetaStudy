@@ -1,7 +1,6 @@
 import streamlit as st
 import random
 import os
-import json
 import html
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -84,17 +83,9 @@ if "initialized" not in st.session_state:
     st.session_state.initialized = True
     st.session_state.messages = [{"role": "system", "content": system_prompt}]
     st.session_state.max_messages = 30
-    st.session_state.saved_jokes = []
     st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
     st.session_state.greeted = False
-    st.session_state.response_saved = False
     st.session_state.pending_prompt = None
-    try:
-        with open("saved_jokes.json", "r", encoding="utf-8") as f:
-            st.session_state.saved_jokes = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        logging.warning(f"저장된 유머 파일 로드 실패: {str(e)}")
-        st.session_state.saved_jokes = []
 
 # 환영 인사 및 예시 질문
 greetings = [
@@ -129,11 +120,11 @@ if prompt_input or st.session_state.get("pending_prompt"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     if len(st.session_state.messages) > st.session_state.max_messages:
         st.session_state.messages = [st.session_state.messages[0]] + st.session_state.messages[-st.session_state.max_messages+1:]
+
     with st.chat_message("user"):
         st.markdown(html.escape(prompt))
 
     full_response = ""
-    st.session_state.response_saved = False
     with st.chat_message("assistant"):
         response_box = st.empty()
         with st.spinner("배꼽 터지는 중... 🤣"):
@@ -141,13 +132,18 @@ if prompt_input or st.session_state.get("pending_prompt"):
                 stream = client.chat.completions.create(
                     model="gpt-4o",
                     messages=st.session_state.messages,
+                    temperature=0.7,
+                    max_tokens=150,
                     stream=True
                 )
                 for chunk in stream:
                     if chunk.choices and chunk.choices[0].delta.content:
                         content = chunk.choices[0].delta.content
                         full_response += content
-                        response_box.markdown(full_response)
+                        response_box.markdown(html.escape(full_response))
+                if not full_response.strip():
+                    full_response = "죄송해요! 유머를 찾는 데 실패했어요. 다른 질문을 시도해 보세요! 😅"
+                    response_box.markdown(full_response)
             except Exception as e:
                 st.error(f"OpenAI API 호출 중 오류 발생: {str(e)}")
                 st.stop()
@@ -167,19 +163,6 @@ if prompt_input or st.session_state.get("pending_prompt"):
                 """
                 st.markdown(copy_code, unsafe_allow_html=True)
 
-    if full_response and not st.session_state.response_saved:
-        if st.button("⭐ 이 유머 저장하기", key="save_joke_button", help="이 유머를 저장"):
-            logging.debug("저장 시도됨")
-            if full_response not in st.session_state.saved_jokes:
-                st.session_state.saved_jokes.append(full_response)
-                try:
-                    with open("saved_jokes.json", "w", encoding="utf-8") as f:
-                        json.dump(st.session_state.saved_jokes, f, ensure_ascii=False, indent=2)
-                    st.success("✅ 유머가 저장되었어요!")
-                except Exception as e:
-                    st.error(f"유머 저장 중 오류 발생: {str(e)}")
-            st.session_state.response_saved = True
-
     humor = st.radio("유머 스타일을 선택해 주세요:", ["😂 아재개그 스타일!", "😶 넌센스 같아요", "😈 블랙유머 느낌"], index=None, key=f"humor_choice_{len(st.session_state.messages)}")
     if humor:
         if "아재개그" in humor:
@@ -190,20 +173,6 @@ if prompt_input or st.session_state.get("pending_prompt"):
             st.session_state.style_scores["dark"] += 1
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
-
-if st.session_state.saved_jokes:
-    with st.expander("💾 저장된 유머 보기", expanded=False):
-        for i, joke in enumerate(st.session_state.saved_jokes):
-            st.markdown(f"**유머 {i+1}**: {html.escape(joke)}")
-            if st.button("🗑️ 삭제", key=f"delete_joke_{i}", help="이 유머 삭제"):
-                st.session_state.saved_jokes.pop(i)
-                try:
-                    with open("saved_jokes.json", "w", encoding="utf-8") as f:
-                        json.dump(st.session_state.saved_jokes, f, ensure_ascii=False, indent=2)
-                    st.success("유머가 삭제되었습니다!")
-                except Exception as e:
-                    st.error(f"유머 삭제 중 오류 발생: {str(e)}")
-                st.rerun()
 
 if any(st.session_state.style_scores.values()):
     st.subheader("📊 유머 스타일 통계")
