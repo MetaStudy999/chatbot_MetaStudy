@@ -122,12 +122,11 @@ for msg in st.session_state.messages[1:]:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# ✅ 채팅 입력창
-prompt = st.session_state.pop("pending_prompt", None)
-if prompt is None:
-    prompt = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
+# ✅ 채팅 입력창 (항상 출력되도록)
+prompt_input = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
 
 # ✅ GPT 응답 처리
+prompt = st.session_state.pop("pending_prompt", None) or prompt_input
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -153,6 +152,7 @@ if prompt:
         if st.button("⭐ 이 유머 저장하기"):
             if full_response not in st.session_state.saved_jokes:
                 st.session_state.saved_jokes.append(full_response)
+                st.success("✅ 유머가 저장되었어요!")
             st.session_state.response_saved = True
 
     humor = st.radio("유머 스타일을 선택해 주세요:",
