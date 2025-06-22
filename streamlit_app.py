@@ -11,16 +11,10 @@ import logging
 load_dotenv()
 
 # 기본 설정
-st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
+st.set_page_config(page_title="😂 배꼽봇", page_icon="😜", layout="centered")
 st.title("😂 배꼽봇 (BaekkopBot)")
 
-# 로고 이미지 로드
-try:
-    st.image("logo.png", caption="🌱 웃음 충전 중... 배꼽봇과 함께 😄", use_container_width=True)
-except FileNotFoundError:
-    st.warning("로고 이미지를 찾을 수 없습니다!")
-
-# 말풍선 CSS
+# 커스텀 CSS
 st.markdown("""
 <style>
 .balloon-btn {
@@ -35,12 +29,26 @@ st.markdown("""
     cursor: pointer;
     text-align: left;
     transition: background 0.3s;
+    width: 100%;
 }
 .balloon-btn:hover {
     background-color: #d35400;
 }
+.stButton>button {
+    border-radius: 10px;
+    padding: 8px 16px;
+}
+.stSpinner > div {
+    border-color: #f39c12 !important;
+}
 </style>
 """, unsafe_allow_html=True)
+
+# 로고 이미지 로드
+try:
+    st.image("logo.png", caption="🌱 웃음 충전 중... 배꼽봇과 함께 😄", use_container_width=True)
+except FileNotFoundError:
+    st.warning("로고 이미지를 찾을 수 없습니다!")
 
 # 언어 선택
 language = st.sidebar.selectbox("🌐 언어 선택 / Language", ["한국어", "English", "日本語"])
@@ -59,7 +67,7 @@ else:
 
 # OpenAI API 키 처리
 api_key_env = os.getenv("OPENAI_API_KEY")
-openai_api_key = st.text_input("🔑 OpenAI API Key", type="password", value=api_key_env or "")
+openai_api_key = st.sidebar.text_input("🔑 OpenAI API Key", type="password", value=api_key_env or "")
 if not openai_api_key:
     st.info("API 키를 입력해 주세요.", icon="🗝️")
     st.stop()
@@ -74,8 +82,7 @@ client = st.session_state.openai_client
 # 상태 초기화
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
-    if "messages" not in st.session_state:
-        st.session_state.messages = [{"role": "system", "content": system_prompt}]
+    st.session_state.messages = [{"role": "system", "content": system_prompt}]
     st.session_state.max_messages = 30
     st.session_state.saved_jokes = []
     st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
@@ -83,9 +90,10 @@ if "initialized" not in st.session_state:
     st.session_state.response_saved = False
     st.session_state.pending_prompt = None
     try:
-        with open("saved_jokes.json", "r") as f:
+        with open("saved_jokes.json", "r", encoding="utf-8") as f:
             st.session_state.saved_jokes = json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logging.warning(f"저장된 유머 파일 로드 실패: {str(e)}")
         st.session_state.saved_jokes = []
 
 # 환영 인사 및 예시 질문
@@ -111,13 +119,16 @@ if not st.session_state.greeted:
             st.session_state.pending_prompt = q
             st.session_state.greeted = True
 
-prompt_input = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
+prompt_input = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂", max_chars=500)
 
-if prompt_input or (st.session_state.get("pending_prompt") is not None):
+if prompt_input or st.session_state.get("pending_prompt"):
     prompt = st.session_state.pop("pending_prompt", None) or prompt_input
+    if len(prompt) > 500:
+        st.error("입력은 500자를 초과할 수 없습니다!")
+        st.stop()
     st.session_state.messages.append({"role": "user", "content": prompt})
     if len(st.session_state.messages) > st.session_state.max_messages:
-        st.session_state.messages = st.session_state.messages[-st.session_state.max_messages:]
+        st.session_state.messages = [st.session_state.messages[0]] + st.session_state.messages[-st.session_state.max_messages+1:]
     with st.chat_message("user"):
         st.markdown(html.escape(prompt))
 
@@ -145,12 +156,12 @@ if prompt_input or (st.session_state.get("pending_prompt") is not None):
             copy_col, response_col = st.columns([0.1, 0.9])
             with copy_col:
                 copy_code = f"""
-                <button onclick="navigator.clipboard.writeText(`{full_response}`)" style="
+                <button onclick="navigator.clipboard.writeText(`{html.escape(full_response)}`)" style="
                     background-color: #2ecc71;
                     color: white;
                     border: none;
                     padding: 8px 12px;
-                    border-radius: 5px;
+                    border-radius: 10px;
                     cursor: pointer;
                 ">📋 복사</button>
                 """
@@ -159,19 +170,17 @@ if prompt_input or (st.session_state.get("pending_prompt") is not None):
     if full_response and not st.session_state.response_saved:
         if st.button("⭐ 이 유머 저장하기", key="save_joke_button", help="이 유머를 저장"):
             logging.debug("저장 시도됨")
-            logging.debug(f"full_response = {full_response}")
             if full_response not in st.session_state.saved_jokes:
                 st.session_state.saved_jokes.append(full_response)
                 try:
-                    with open("saved_jokes.json", "w") as f:
-                        json.dump(st.session_state.saved_jokes, f)
+                    with open("saved_jokes.json", "w", encoding="utf-8") as f:
+                        json.dump(st.session_state.saved_jokes, f, ensure_ascii=False, indent=2)
                     st.success("✅ 유머가 저장되었어요!")
                 except Exception as e:
                     st.error(f"유머 저장 중 오류 발생: {str(e)}")
-            logging.debug(f"saved_jokes = {st.session_state.saved_jokes}")
             st.session_state.response_saved = True
 
-    humor = st.radio("유머 스타일을 선택해 주세요:", ["😂 아재개그 스타일!", "😶 넌센스 같아요", "😈 블랙유머 느낌"], index=None, key="humor_choice")
+    humor = st.radio("유머 스타일을 선택해 주세요:", ["😂 아재개그 스타일!", "😶 넌센스 같아요", "😈 블랙유머 느낌"], index=None, key=f"humor_choice_{len(st.session_state.messages)}")
     if humor:
         if "아재개그" in humor:
             st.session_state.style_scores["dad_joke"] += 1
@@ -189,8 +198,8 @@ if st.session_state.saved_jokes:
             if st.button("🗑️ 삭제", key=f"delete_joke_{i}", help="이 유머 삭제"):
                 st.session_state.saved_jokes.pop(i)
                 try:
-                    with open("saved_jokes.json", "w") as f:
-                        json.dump(st.session_state.saved_jokes, f)
+                    with open("saved_jokes.json", "w", encoding="utf-8") as f:
+                        json.dump(st.session_state.saved_jokes, f, ensure_ascii=False, indent=2)
                     st.success("유머가 삭제되었습니다!")
                 except Exception as e:
                     st.error(f"유머 삭제 중 오류 발생: {str(e)}")
