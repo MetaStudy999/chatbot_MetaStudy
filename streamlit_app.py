@@ -4,13 +4,12 @@ import json
 import matplotlib.pyplot as plt
 from openai import OpenAI
 
+# ✅ 기본 설정
 st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
 st.title("😂 배꼽봇 (BaekkopBot)")
-
-# 로고 (없으면 주석처리)
 st.image("logo.png", caption="🌱 웃음 충전 중... 배꼽봇과 함께 😄", use_container_width=True)
 
-# 말풍선 스타일
+# ✅ 말풍선 CSS
 st.markdown("""
 <style>
 .balloon-btn {
@@ -32,7 +31,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 언어 선택
+# ✅ 언어 선택
 language = st.sidebar.selectbox("🌐 언어 선택 / Language", ["한국어", "English", "日本語"])
 if language == "English":
     system_prompt = "You are BaekkopBot, a world-class humor chatbot. You greet users with clever, culturally sensitive jokes..."
@@ -44,117 +43,123 @@ else:
     사용자에게 웃음을 주는 농담, 퀴즈, 밈 등을 상황에 맞게 유쾌하게 전달해 주세요.
     """
 
-# OpenAI API 키 입력
+# ✅ OpenAI API 키
 openai_api_key = st.text_input("🔑 OpenAI API Key", type="password")
 if not openai_api_key:
     st.info("API 키를 입력해 주세요.", icon="🗝️")
-else:
-    client = OpenAI(api_key=openai_api_key)
+    st.stop()
 
-    # 초기화
-    greetings = [
-        "🌱 지구를 아끼는 당신, 오늘도 배꼽은 챙기셨나요?\n♻️ 웃음은 무한 재생 가능 자원이에요!",
-        "🌍 환영합니다! 지구를 위한 작은 미소, 여기서 시작돼요.",
-        "🌿 자연은 숨 쉬고, 당신은 웃고, 배꼽봇은 개그해요!"
-    ]
-    example_questions = [
-        "재밌는 퀴즈 하나 줘! 🤔",
-        "요즘 제일 핫한 밈 알려줘 🔥",
-        "아재개그 하나만 부탁해요 😂",
-        "기분 안 좋을 때 들으면 좋은 유머 있어?",
-        "세계에서 제일 웃긴 농담 알려줘!"
-    ]
+client = OpenAI(api_key=openai_api_key)
 
-    if "initialized" not in st.session_state:
-        st.session_state.initialized = True
-        st.session_state.messages = [{"role": "system", "content": system_prompt}]
-        st.session_state.saved_jokes = []
-        st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
-        st.session_state.greeted = False
-        st.session_state.response_saved = False
-        st.session_state.pending_prompt = None
+# ✅ 상태 초기화
+if "initialized" not in st.session_state:
+    st.session_state.initialized = True
+    st.session_state.messages = [{"role": "system", "content": system_prompt}]
+    st.session_state.saved_jokes = []
+    st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
+    st.session_state.greeted = False
+    st.session_state.response_saved = False
+    st.session_state.pending_prompt = None
 
-    # 환영 인사 & 말풍선
-    if not st.session_state.greeted:
-        with st.chat_message("assistant"):
-            st.markdown(random.choice(greetings))
-        st.markdown("#### 💬 이런 질문 해볼까요?")
-        for i, q in enumerate(example_questions):
-            if st.button(f"💭 {q}", key=f"btn{i}"):
-                st.session_state.pending_prompt = q
-                st.session_state.greeted = True
-                st.rerun()
+# ✅ 예시 질문 & 인사
+greetings = [
+    "🌱 지구를 아끼는 당신, 오늘도 배꼽은 챙기셨나요?",
+    "🌍 환영합니다! 지구를 위한 작은 미소, 여기서 시작돼요.",
+    "🌿 자연은 숨 쉬고, 당신은 웃고, 배꼽봇은 개그해요!"
+]
+example_questions = [
+    "재밌는 퀴즈 하나 줘! 🤔",
+    "요즘 제일 핫한 밈 알려줘 🔥",
+    "아재개그 하나만 부탁해요 😂",
+    "기분 안 좋을 때 들으면 좋은 유머 있어?",
+    "세계에서 제일 웃긴 농담 알려줘!"
+]
 
-    # 사이드바
-    with st.sidebar:
-        st.markdown("### ⭐ 저장한 유머")
-        for idx, joke in enumerate(st.session_state.saved_jokes, 1):
-            st.markdown(f"{idx}. {joke}")
+# ✅ 환영 인사 & 말풍선
+if not st.session_state.greeted:
+    with st.chat_message("assistant"):
+        st.markdown(random.choice(greetings))
+    st.markdown("#### 💬 이런 질문 해볼까요?")
+    for i, q in enumerate(example_questions):
+        if st.button(f"💭 {q}", key=f"btn{i}"):
+            st.session_state.pending_prompt = q
+            st.session_state.greeted = True
+            st.rerun()
 
-        st.markdown("### 🎯 유머 취향 분석")
-        def get_humor_type(scores):
-            if max(scores.values()) == 0:
-                return "아직 취향을 파악 중이에요! 😊"
-            top = max(scores, key=scores.get)
-            label = {"dad_joke": "아재개그", "nonsense": "넌센스", "dark": "블랙유머"}
-            return f"당신은 **{label[top]} 스타일** 유머를 좋아하시는군요! 😎"
-        st.markdown(get_humor_type(st.session_state.style_scores))
+# ✅ 사이드바: 저장, 분석, 다운로드
+with st.sidebar:
+    st.markdown("### ⭐ 저장한 유머")
+    for idx, joke in enumerate(st.session_state.saved_jokes, 1):
+        st.markdown(f"{idx}. {joke}")
 
-        if st.button("📥 저장 유머 TXT"):
-            text = "\n\n".join(st.session_state.saved_jokes)
-            st.download_button("TXT 다운로드", text, file_name="saved_jokes.txt")
+    st.markdown("### 🎯 유머 취향 분석")
+    def get_humor_type(scores):
+        if max(scores.values()) == 0:
+            return "아직 취향을 파악 중이에요! 😊"
+        top = max(scores, key=scores.get)
+        label = {"dad_joke": "아재개그", "nonsense": "넌센스", "dark": "블랙유머"}
+        return f"당신은 **{label[top]} 스타일** 유머를 좋아하시는군요! 😎"
+    st.markdown(get_humor_type(st.session_state.style_scores))
 
-        if st.button("📥 저장 유머 JSON"):
-            data = json.dumps({"jokes": st.session_state.saved_jokes}, ensure_ascii=False)
-            st.download_button("JSON 다운로드", data, file_name="saved_jokes.json")
+    if st.button("📥 저장 유머 TXT"):
+        text = "\n\n".join(st.session_state.saved_jokes)
+        st.download_button("TXT 다운로드", text, file_name="saved_jokes.txt")
 
-        fig, ax = plt.subplots()
-        ax.bar(st.session_state.style_scores.keys(), st.session_state.style_scores.values(), color=["#f1c40f", "#2ecc71", "#e74c3c"])
-        ax.set_title("유머 취향 점수")
-        st.pyplot(fig)
+    if st.button("📥 저장 유머 JSON"):
+        data = json.dumps({"jokes": st.session_state.saved_jokes}, ensure_ascii=False)
+        st.download_button("JSON 다운로드", data, file_name="saved_jokes.json")
 
-    # 이전 대화 출력
-    for msg in st.session_state.messages[1:]:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+    fig, ax = plt.subplots()
+    ax.bar(st.session_state.style_scores.keys(), st.session_state.style_scores.values(), color=["#f1c40f", "#2ecc71", "#e74c3c"])
+    ax.set_title("유머 취향 점수")
+    st.pyplot(fig)
 
-    # 입력 처리
-    prompt = st.session_state.pop("pending_prompt", None) or st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
-    if prompt:
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+# ✅ 이전 대화 출력
+for msg in st.session_state.messages[1:]:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-        full_response = ""
-        response_box = st.empty()  # 💡 한 위치에 덮어쓰기용
+# ✅ 채팅 입력창 (항상 출력되도록 보장)
+prompt = st.session_state.pop("pending_prompt", None)
+if prompt is None:
+    prompt = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
 
-        with st.chat_message("assistant"):
-            with st.spinner("배꼽 터지는 중... 🤣"):
-                stream = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=st.session_state.messages,
-                    stream=True
-                )
-                for chunk in stream:
-                    if chunk.choices and chunk.choices[0].delta.content:
-                        content = chunk.choices[0].delta.content
-                        full_response += content
-                        response_box.markdown(full_response)  # ✅ 자연스럽게 한 줄로 출력됨
+# ✅ GPT 응답 처리
+if prompt:
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-        if not st.session_state.response_saved and st.button("⭐ 이 유머 저장하기"):
-            st.session_state.saved_jokes.append(full_response)
-            st.session_state.response_saved = True
+    full_response = ""
+    response_box = st.empty()  # ✅ 실시간 덮어쓰기 영역
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            if st.button("😂 아재개그 스타일!"):
-                st.session_state.style_scores["dad_joke"] += 1
-        with col2:
-            if st.button("😶 넌센스 같아요"):
-                st.session_state.style_scores["nonsense"] += 1
-        with col3:
-            if st.button("😈 블랙유머 느낌"):
-                st.session_state.style_scores["dark"] += 1
+    with st.chat_message("assistant"):
+        with st.spinner("배꼽 터지는 중... 🤣"):
+            stream = client.chat.completions.create(
+                model="gpt-4o",
+                messages=st.session_state.messages,
+                stream=True
+            )
+            for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    response_box.markdown(full_response)
 
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
-        st.session_state.response_saved = False
+    if not st.session_state.response_saved and st.button("⭐ 이 유머 저장하기"):
+        st.session_state.saved_jokes.append(full_response)
+        st.session_state.response_saved = True
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("😂 아재개그 스타일!"):
+            st.session_state.style_scores["dad_joke"] += 1
+    with col2:
+        if st.button("😶 넌센스 같아요"):
+            st.session_state.style_scores["nonsense"] += 1
+    with col3:
+        if st.button("😈 블랙유머 느낌"):
+            st.session_state.style_scores["dark"] += 1
+
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
+    st.session_state.response_saved = False
