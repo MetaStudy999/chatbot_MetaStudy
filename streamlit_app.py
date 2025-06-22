@@ -112,20 +112,17 @@ if not st.session_state.greeted:
             st.session_state.greeted = True
             st.rerun()
 
-# 채팅 처리
-prompt = st.session_state.pop("pending_prompt", None)
-if prompt is None:
-    with st.expander("💬 지금 바로 유머를 요청해보세요!", expanded=False):
-        prompt_input = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
-else:
-    prompt_input = prompt
+# 항상 표시되는 대화 입력창
+prompt_input = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
 
-if prompt_input:
-    st.session_state.messages.append({"role": "user", "content": prompt_input})
+# 채팅 처리
+if prompt_input or st.session_state.pending_prompt:
+    prompt = st.session_state.pop("pending_prompt", None) or prompt_input
+    st.session_state.messages.append({"role": "user", "content": prompt})
     if len(st.session_state.messages) > st.session_state.max_messages:
         st.session_state.messages = st.session_state.messages[-st.session_state.max_messages:]
     with st.chat_message("user"):
-        st.markdown(html.escape(prompt_input))  # 사용자 입력 이스케이프
+        st.markdown(html.escape(prompt))  # 사용자 입력 이스케이프
 
     full_response = ""
     st.session_state.response_saved = False  # 저장 플래그 리셋
