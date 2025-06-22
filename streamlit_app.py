@@ -80,7 +80,7 @@ if "initialized" not in st.session_state:
     st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
     st.session_state.greeted = False
     st.session_state.response_saved = False
-    st.session_state.pending_prompt = None
+    st.session_state.pending_prompt = None  # 명시적 초기화
     # 저장된 농담 로드
     try:
         with open("saved_jokes.json", "r") as f:
@@ -116,7 +116,7 @@ if not st.session_state.greeted:
 prompt_input = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
 
 # 채팅 처리
-if prompt_input or st.session_state.pending_prompt:
+if prompt_input or (st.session_state.get("pending_prompt") is not None):
     prompt = st.session_state.pop("pending_prompt", None) or prompt_input
     st.session_state.messages.append({"role": "user", "content": prompt})
     if len(st.session_state.messages) > st.session_state.max_messages:
