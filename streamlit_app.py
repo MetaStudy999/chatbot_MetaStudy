@@ -136,32 +136,38 @@ if prompt_input or st.session_state.get("pending_prompt"):
                     max_tokens=150,
                     stream=True
                 )
+                collected_chunks = []
                 for chunk in stream:
                     if chunk.choices and chunk.choices[0].delta.content:
                         content = chunk.choices[0].delta.content
-                        full_response += content
+                        collected_chunks.append(content)
+                        full_response = "".join(collected_chunks)
                         response_box.markdown(html.escape(full_response))
                 if not full_response.strip():
                     full_response = "죄송해요! 유머를 찾는 데 실패했어요. 다른 질문을 시도해 보세요! 😅"
-                    response_box.markdown(full_response)
+                    response_box.markdown(html.escape(full_response))
             except Exception as e:
-                st.error(f"OpenAI API 호출 중 오류 발생: {str(e)}")
+                logging.error(f"API 오류: {str(e)}")
+                st.error(f"OpenAI API 호출 중 오류 발생: {str(e)}. 로그를 확인하세요.")
                 st.stop()
 
         if full_response:
-            copy_col, response_col = st.columns([0.1, 0.9])
-            with copy_col:
+            col1, col2 = st.columns([0.1, 0.9])
+            with col1:
                 copy_code = f"""
-                <button onclick="navigator.clipboard.writeText(`{html.escape(full_response)}`)" style="
+                <button onclick="navigator.clipboard.writeText('{html.escape(full_response)}')" style="
                     background-color: #2ecc71;
                     color: white;
                     border: none;
                     padding: 8px 12px;
                     border-radius: 10px;
                     cursor: pointer;
+                    width: 100%;
                 ">📋 복사</button>
                 """
                 st.markdown(copy_code, unsafe_allow_html=True)
+            with col2:
+                st.markdown(html.escape(full_response))
 
     humor = st.radio("유머 스타일을 선택해 주세요:", ["😂 아재개그 스타일!", "😶 넌센스 같아요", "😈 블랙유머 느낌"], index=None, key=f"humor_choice_{len(st.session_state.messages)}")
     if humor:
