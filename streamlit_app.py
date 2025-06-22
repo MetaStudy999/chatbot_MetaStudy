@@ -1,16 +1,17 @@
 import streamlit as st
-import openai
 import random
 import json
 import matplotlib.pyplot as plt
+from openai import OpenAI  # ✅ 최신 SDK 방식
 
+# 페이지 설정
 st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
 st.title("😂 배꼽봇 (BaekkopBot)")
 
-# 로고 이미지
+# 로고 (필요 시 파일 제거하거나 주석 처리)
 st.image("logo.png", caption="🌱 웃음 충전 중... 배꼽봇과 함께 😄", use_container_width=True)
 
-# 말풍선 스타일용 CSS
+# CSS 말풍선 스타일
 st.markdown("""
 <style>
 .balloon-btn {
@@ -44,18 +45,18 @@ else:
     사용자에게 웃음을 주는 농담, 퀴즈, 밈 등을 상황에 맞게 유쾌하게 전달해 주세요.
     """
 
-# API 키 입력
+# OpenAI API Key 입력
 openai_api_key = st.text_input("🔑 OpenAI API Key", type="password")
 if not openai_api_key:
     st.info("API 키를 입력해 주세요.", icon="🗝️")
 else:
-    openai.api_key = openai_api_key
+    client = OpenAI(api_key=openai_api_key)  # ✅ 최신 SDK 방식
 
-    # 초기 데이터
+    # 초기 설정
     greetings = [
-        "🌱 지구를 아끼는 당신, 오늘도 배꼽은 챙기셨나요?\n♻️ 웃음은 무한 재생 가능 자원이에요!\n😄 지금부터 탄소 대신 개그를 배출합니다!",
-        "🌍 환영합니다! 지구를 위한 작은 미소, 여기서 시작돼요.\n🚲 오늘도 배꼽봇과 함께 웃음 탄소중립 도전!\n😆 '지구야 미안해~ 나 오늘 또 웃을 거야!'",
-        "🌿 자연은 숨 쉬고, 당신은 웃고, 배꼽봇은 개그해요!\n🌸 친환경 유머, 감성 재생 중입니다.\n🤣 오늘 하루 지구도 웃을 거예요."
+        "🌱 지구를 아끼는 당신, 오늘도 배꼽은 챙기셨나요?\n♻️ 웃음은 무한 재생 가능 자원이에요!",
+        "🌍 환영합니다! 지구를 위한 작은 미소, 여기서 시작돼요.",
+        "🌿 자연은 숨 쉬고, 당신은 웃고, 배꼽봇은 개그해요!"
     ]
     example_questions = [
         "재밌는 퀴즈 하나 줘! 🤔",
@@ -65,7 +66,6 @@ else:
         "세계에서 제일 웃긴 농담 알려줘!"
     ]
 
-    # 세션 초기화
     if "initialized" not in st.session_state:
         st.session_state.initialized = True
         st.session_state.messages = [{"role": "system", "content": system_prompt}]
@@ -75,7 +75,7 @@ else:
         st.session_state.response_saved = False
         st.session_state.pending_prompt = None
 
-    # 초기 환영 메시지 & 예시 버튼
+    # 환영 인사 & 예시 말풍선
     if not st.session_state.greeted:
         with st.chat_message("assistant"):
             st.markdown(random.choice(greetings))
@@ -86,7 +86,7 @@ else:
                 st.session_state.greeted = True
                 st.rerun()
 
-    # 사이드바: 저장 유머, 점수, 다운로드
+    # 사이드바: 저장 유머, 취향 분석, 다운로드
     with st.sidebar:
         st.markdown("### ⭐ 저장한 유머")
         for idx, joke in enumerate(st.session_state.saved_jokes, 1):
@@ -119,8 +119,8 @@ else:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # 사용자 입력 또는 말풍선 전달된 질문
-    prompt = st.session_state.pop("pending_prompt", None) or st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😄")
+    # 입력 처리: 말풍선 또는 채팅창
+    prompt = st.session_state.pop("pending_prompt", None) or st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
@@ -129,16 +129,18 @@ else:
         full_response = ""
         with st.chat_message("assistant"):
             with st.spinner("배꼽 터지는 중... 🤣"):
-                stream = openai.ChatCompletion.create(
+                stream = client.chat.completions.create(
                     model="gpt-4o",
                     messages=st.session_state.messages,
                     stream=True
                 )
                 for chunk in stream:
-                    content = chunk.choices[0].delta.get("content", "")
-                    full_response += content
-                    st.markdown(content)
+                    if chunk.choices and chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        full_response += content
+                        st.markdown(content)
 
+        # 저장 & 유머 평가
         if not st.session_state.response_saved and st.button("⭐ 이 유머 저장하기"):
             st.session_state.saved_jokes.append(full_response)
             st.session_state.response_saved = True
