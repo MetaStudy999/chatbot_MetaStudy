@@ -3,6 +3,11 @@ import random
 import json
 import matplotlib.pyplot as plt
 from openai import OpenAI
+import os
+from dotenv import load_dotenv
+import logging
+
+load_dotenv()
 
 # ✅ 기본 설정
 st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
@@ -44,20 +49,20 @@ else:
     """
 
 # ✅ OpenAI API 키
-if "api_key" not in st.session_state:
-    st.session_state.api_key = ""
-
-openai_api_key = st.text_input("🔑 OpenAI API Key", type="password", value=st.session_state.api_key)
+api_key_env = os.getenv("OPENAI_API_KEY")
+openai_api_key = st.text_input("🔑 OpenAI API Key", type="password", value=api_key_env or "")
 if not openai_api_key:
     st.info("API 키를 입력해 주세요.", icon="🗝️")
     st.stop()
-st.session_state.api_key = openai_api_key
-client = OpenAI(api_key=openai_api_key)
+if "openai_client" not in st.session_state:
+    st.session_state.openai_client = OpenAI(api_key=openai_api_key)
+client = st.session_state.openai_client
 
 # ✅ 상태 초기화
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
     st.session_state.messages = [{"role": "system", "content": system_prompt}]
+    st.session_state.max_messages = 30
     st.session_state.saved_jokes = []
     st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
     st.session_state.greeted = False
@@ -89,81 +94,51 @@ if not st.session_state.greeted:
             st.session_state.greeted = True
             st.rerun()
 
-# ✅ 사이드바: 저장, 분석, 다운로드
-with st.sidebar:
-    st.markdown("### ⭐ 저장한 유머")
-    for idx, joke in enumerate(st.session_state.saved_jokes, 1):
-        st.markdown(f"{idx}. {joke}")
+# ✅ 채팅 처리
+prompt = st.session_state.pop("pending_prompt", None)
+if prompt is None:
+    with st.expander("💬 지금 바로 유머를 요청해보세요!"):
+        prompt_input = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
+else:
+    prompt_input = prompt
 
-    st.markdown("### 🎯 유머 취향 분석")
-    def get_humor_type(scores):
-        if max(scores.values()) == 0:
-            return "아직 취향을 파악 중이에요! 😊"
-        top = max(scores, key=scores.get)
-        label = {"dad_joke": "아재개그", "nonsense": "넌센스", "dark": "블랙유머"}
-        return f"당신은 **{label[top]} 스타일** 유머를 좋아하시는군요! 😎"
-    st.markdown(get_humor_type(st.session_state.style_scores))
-
-    if st.button("📥 저장 유머 TXT"):
-        text = "\n\n".join(st.session_state.saved_jokes)
-        st.download_button("TXT 다운로드", text, file_name="saved_jokes.txt")
-
-    if st.button("📥 저장 유머 JSON"):
-        data = json.dumps({"jokes": st.session_state.saved_jokes}, ensure_ascii=False)
-        st.download_button("JSON 다운로드", data, file_name="saved_jokes.json")
-
-    fig, ax = plt.subplots()
-    ax.bar(st.session_state.style_scores.keys(), st.session_state.style_scores.values(), color=["#f1c40f", "#2ecc71", "#e74c3c"])
-    ax.set_title("유머 취향 점수")
-    st.pyplot(fig)
-
-# ✅ 이전 대화 출력
-for msg in st.session_state.messages[1:]:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-
-# ✅ 채팅 입력창 (항상 출력되도록)
-prompt_input = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
-
-# ✅ GPT 응답 처리
-prompt = st.session_state.pop("pending_prompt", None) or prompt_input
-if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
+if prompt_input:
+    st.session_state.messages.append({"role": "user", "content": prompt_input})
+    if len(st.session_state.messages) > st.session_state.max_messages:
+        st.session_state.messages = st.session_state.messages[-st.session_state.max_messages:]
     with st.chat_message("user"):
-        st.markdown(prompt)
+        st.markdown(prompt_input)
 
     full_response = ""
-    copy_button = copy_col.button("📋 복사", key="copy_button")
-    response_box = st.empty()
-
     with st.chat_message("assistant"):
         copy_col, response_col = st.columns([0.1, 0.9])
+        copy_button = copy_col.button("📋 복사", key="copy_button")
         with response_col:
-        with st.spinner("배꼽 터지는 중... 🤣"):
-            stream = client.chat.completions.create(
-                model="gpt-4o",
-                messages=st.session_state.messages,
-                stream=True
-            )
-            for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    full_response += content
-                    response_box.markdown(full_response)
+            response_box = st.empty()
+            with st.spinner("배꼽 터지는 중... 🤣"):
+                # 비동기 최적화는 별도 구현 필요
+                stream = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=st.session_state.messages,
+                    stream=True
+                )
+                for chunk in stream:
+                    if chunk.choices and chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        full_response += content
+                        response_box.markdown(full_response)
             if copy_button and full_response:
                 st.session_state.clipboard = full_response
                 st.toast("복사되었습니다!", icon="📋")
 
-    # ✅ 스트리밍 완료 후 저장 버튼 노출 및 디버깅 출력
     if full_response and not st.session_state.response_saved:
-        st.write("DEBUG: 저장 버튼 활성화됨")
-        if st.button("⭐ 이 유머 저장하기"):
-            st.write("DEBUG: 저장 시도됨")
-            st.write("DEBUG: full_response =", full_response)
+        if st.button("⭐ 이 유머 저장하기", key="save_joke_button"):
+            logging.debug("저장 시도됨")
+            logging.debug(f"full_response = {full_response}")
             if full_response not in st.session_state.saved_jokes:
                 st.session_state.saved_jokes.append(full_response)
                 st.success("✅ 유머가 저장되었어요!")
-            st.write("DEBUG: saved_jokes =", st.session_state.saved_jokes)
+            logging.debug(f"saved_jokes = {st.session_state.saved_jokes}")
             st.session_state.response_saved = True
 
     humor = st.radio("유머 스타일을 선택해 주세요:",
