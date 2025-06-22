@@ -2,16 +2,15 @@ import streamlit as st
 import random
 import json
 import matplotlib.pyplot as plt
-from openai import OpenAI  # ✅ 최신 SDK 방식
+from openai import OpenAI
 
-# 페이지 설정
 st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
 st.title("😂 배꼽봇 (BaekkopBot)")
 
-# 로고 (필요 시 파일 제거하거나 주석 처리)
+# 로고 (없으면 주석처리)
 st.image("logo.png", caption="🌱 웃음 충전 중... 배꼽봇과 함께 😄", use_container_width=True)
 
-# CSS 말풍선 스타일
+# 말풍선 스타일
 st.markdown("""
 <style>
 .balloon-btn {
@@ -45,14 +44,14 @@ else:
     사용자에게 웃음을 주는 농담, 퀴즈, 밈 등을 상황에 맞게 유쾌하게 전달해 주세요.
     """
 
-# OpenAI API Key 입력
+# OpenAI API 키 입력
 openai_api_key = st.text_input("🔑 OpenAI API Key", type="password")
 if not openai_api_key:
     st.info("API 키를 입력해 주세요.", icon="🗝️")
 else:
-    client = OpenAI(api_key=openai_api_key)  # ✅ 최신 SDK 방식
+    client = OpenAI(api_key=openai_api_key)
 
-    # 초기 설정
+    # 초기화
     greetings = [
         "🌱 지구를 아끼는 당신, 오늘도 배꼽은 챙기셨나요?\n♻️ 웃음은 무한 재생 가능 자원이에요!",
         "🌍 환영합니다! 지구를 위한 작은 미소, 여기서 시작돼요.",
@@ -75,7 +74,7 @@ else:
         st.session_state.response_saved = False
         st.session_state.pending_prompt = None
 
-    # 환영 인사 & 예시 말풍선
+    # 환영 인사 & 말풍선
     if not st.session_state.greeted:
         with st.chat_message("assistant"):
             st.markdown(random.choice(greetings))
@@ -86,7 +85,7 @@ else:
                 st.session_state.greeted = True
                 st.rerun()
 
-    # 사이드바: 저장 유머, 취향 분석, 다운로드
+    # 사이드바
     with st.sidebar:
         st.markdown("### ⭐ 저장한 유머")
         for idx, joke in enumerate(st.session_state.saved_jokes, 1):
@@ -119,7 +118,7 @@ else:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # 입력 처리: 말풍선 또는 채팅창
+    # 입력 처리
     prompt = st.session_state.pop("pending_prompt", None) or st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
@@ -127,6 +126,8 @@ else:
             st.markdown(prompt)
 
         full_response = ""
+        response_box = st.empty()  # 💡 한 위치에 덮어쓰기용
+
         with st.chat_message("assistant"):
             with st.spinner("배꼽 터지는 중... 🤣"):
                 stream = client.chat.completions.create(
@@ -138,9 +139,8 @@ else:
                     if chunk.choices and chunk.choices[0].delta.content:
                         content = chunk.choices[0].delta.content
                         full_response += content
-                        st.markdown(content)
+                        response_box.markdown(full_response)  # ✅ 자연스럽게 한 줄로 출력됨
 
-        # 저장 & 유머 평가
         if not st.session_state.response_saved and st.button("⭐ 이 유머 저장하기"):
             st.session_state.saved_jokes.append(full_response)
             st.session_state.response_saved = True
