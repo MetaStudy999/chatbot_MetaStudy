@@ -6,6 +6,7 @@ import html
 from openai import OpenAI
 from dotenv import load_dotenv
 import logging
+import pyperclip  # 추가: 클립보드 복사를 위한 라이브러리
 
 # 환경 변수 로드
 load_dotenv()
@@ -80,7 +81,7 @@ if "initialized" not in st.session_state:
     st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
     st.session_state.greeted = False
     st.session_state.response_saved = False
-    st.session_state.pending_prompt = None  # 명시적 초기화
+    st.session_state.pending_prompt = None
     # 저장된 농담 로드
     try:
         with open("saved_jokes.json", "r") as f:
@@ -147,14 +148,11 @@ if prompt_input or (st.session_state.get("pending_prompt") is not None):
         if full_response:
             copy_col, response_col = st.columns([0.1, 0.9])
             if copy_col.button("📋 복사", key="copy_button", help="응답을 클립보드에 복사"):
-                escaped_response = html.escape(full_response)
-                st.components.v1.html(f"""
-                    <script>
-                    navigator.clipboard.writeText(`{escaped_response}`)
-                        .then(() => alert("📋 복사되었습니다!"))
-                        .catch(() => alert("복사에 실패했습니다."));
-                    </script>
-                """, height=0)
+                try:
+                    pyperclip.copy(full_response)
+                    st.success("✅ 응답이 클립보드에 복사되었습니다!")
+                except Exception as e:
+                    st.error(f"복사 중 오류 발생: {str(e)}")
 
     if full_response and not st.session_state.response_saved:
         if st.button("⭐ 이 유머 저장하기", key="save_joke_button", help="이 유머를 저장"):
