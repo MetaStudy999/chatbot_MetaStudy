@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 from openai import OpenAI
 
 # ✅ 기본 설정
-st.set_page_config(page_title="😂 배\u꼽봇", page_icon="😜")
-st.title("😂 배\u꼽봇 (BaekkopBot)")
-st.image("logo.png", caption="🌱 웃음 충전 중... 배\u꼽봇과 함께 😄", use_container_width=True)
+st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
+st.title("😂 배꼽봇 (BaekkopBot)")
+st.image("logo.png", caption="🌱 웃음 충전 중... 배꼽봇과 함께 😄", use_container_width=True)
 
 # ✅ 말풍선 CSS
 st.markdown("""
@@ -39,8 +39,8 @@ elif language == "日本語":
     system_prompt = "あなたは世界最高のユーモアチャットボット『ベコッボット』です..."
 else:
     system_prompt = """
-    당신은 세계 캠자와 유명한 참작적이고 유명한 반영적인 AI 게그 채트버스트입니다. 당신의 이름은 '배\u꼽봇'입니다.
-    사용자에게 웃음을 주는 농담, 퀴즈, 밀 등을 상황에 맞게 유\u쾌하게 전달해 주세요.
+    당신은 세계 최고로 창의적이고 유머 감각이 넘치는 AI 개그 챗봇입니다. 당신의 이름은 '배꼽봇'입니다.
+    사용자에게 웃음을 주는 농담, 퀴즈, 밈 등을 상황에 맞게 유쾌하게 전달해 주세요.
     """
 
 # ✅ OpenAI API 키
@@ -49,7 +49,7 @@ if "api_key" not in st.session_state:
 
 openai_api_key = st.text_input("🔑 OpenAI API Key", type="password", value=st.session_state.api_key)
 if not openai_api_key:
-    st.info("API 키를 입력해 주세요.", icon="🔑")
+    st.info("API 키를 입력해 주세요.", icon="🗝️")
     st.stop()
 st.session_state.api_key = openai_api_key
 client = OpenAI(api_key=openai_api_key)
@@ -66,23 +66,23 @@ if "initialized" not in st.session_state:
 
 # ✅ 예시 질문 & 인사
 greetings = [
-    "🌱 지구를 아끼는 당신, 오늘도 배\u꼽은 찾거요?",
-    "🌍 환영합니다! 지구를 위한 작은 미소, 여기서 시작됩니다.",
-    "🌿 자연은 숫 쉬고, 당신은 웃고, 배\u꼽봇은 게그합니다!"
+    "🌱 지구를 아끼는 당신, 오늘도 배꼽은 챙기셨나요?",
+    "🌍 환영합니다! 지구를 위한 작은 미소, 여기서 시작돼요.",
+    "🌿 자연은 숨 쉬고, 당신은 웃고, 배꼽봇은 개그해요!"
 ]
 example_questions = [
-    "재미있는 퀴즈 하나 주어! 🤔",
-    "요즘 제일 하트한 밀 알려줘요 🔥",
-    "아제게구 하나만 보해요 😂",
-    "기분 안 좋을 때 들을 때 좋은 유머 있어?",
-    "세계에서 제일 웃기는 농담 알려줘요!"
+    "재밌는 퀴즈 하나 줘! 🤔",
+    "요즘 제일 핫한 밈 알려줘 🔥",
+    "아재개그 하나만 부탁해요 😂",
+    "기분 안 좋을 때 들으면 좋은 유머 있어?",
+    "세계에서 제일 웃긴 농담 알려줘!"
 ]
 
 # ✅ 환영 인사 & 말풍선
 if not st.session_state.greeted:
     with st.chat_message("assistant"):
         st.markdown(random.choice(greetings))
-    st.markdown("#### 💬 이러한 질문 해보거요?")
+    st.markdown("#### 💬 이런 질문 해볼까요?")
     for i, q in enumerate(example_questions):
         if st.button(f"💭 {q}", key=f"btn{i}"):
             st.session_state.pending_prompt = q
@@ -100,15 +100,15 @@ with st.sidebar:
         if max(scores.values()) == 0:
             return "아직 취향을 파악 중이에요! 😊"
         top = max(scores, key=scores.get)
-        label = {"dad_joke": "아제게구", "nonsense": "넠센스", "dark": "블랙유머"}
+        label = {"dad_joke": "아재개그", "nonsense": "넌센스", "dark": "블랙유머"}
         return f"당신은 **{label[top]} 스타일** 유머를 좋아하시는군요! 😎"
     st.markdown(get_humor_type(st.session_state.style_scores))
 
-    if st.button("📅 저장 유머 TXT"):
+    if st.button("📥 저장 유머 TXT"):
         text = "\n\n".join(st.session_state.saved_jokes)
         st.download_button("TXT 다운로드", text, file_name="saved_jokes.txt")
 
-    if st.button("📅 저장 유머 JSON"):
+    if st.button("📥 저장 유머 JSON"):
         data = json.dumps({"jokes": st.session_state.saved_jokes}, ensure_ascii=False)
         st.download_button("JSON 다운로드", data, file_name="saved_jokes.json")
 
@@ -122,10 +122,10 @@ for msg in st.session_state.messages[1:]:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# ✅ 채팅 입력창 (항상 출력되도록 보장)
+# ✅ 채팅 입력창
 prompt = st.session_state.pop("pending_prompt", None)
 if prompt is None:
-    prompt = st.chat_input("웃음이 필요할 때는 말 거래 보세요! 😂")
+    prompt = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
 
 # ✅ GPT 응답 처리
 if prompt:
@@ -137,7 +137,7 @@ if prompt:
     response_box = st.empty()
 
     with st.chat_message("assistant"):
-        with st.spinner("배\u꼽 터지는 중... 🤣"):
+        with st.spinner("배꼽 터지는 중... 🤣"):
             stream = client.chat.completions.create(
                 model="gpt-4o",
                 messages=st.session_state.messages,
@@ -155,13 +155,13 @@ if prompt:
                 st.session_state.saved_jokes.append(full_response)
             st.session_state.response_saved = True
 
-    humor = st.radio("유머 스타일을 선택해주세요:",
-                     ["😂 아제게구 스타일!", "😶 넠센스 같아요", "😈 블랙유머 느긋"],
+    humor = st.radio("유머 스타일을 선택해 주세요:",
+                     ["😂 아재개그 스타일!", "😶 넌센스 같아요", "😈 블랙유머 느낌"],
                      index=None, key="humor_choice")
     if humor:
-        if "아제게구" in humor:
+        if "아재개그" in humor:
             st.session_state.style_scores["dad_joke"] += 1
-        elif "넠센스" in humor:
+        elif "넌센스" in humor:
             st.session_state.style_scores["nonsense"] += 1
         elif "블랙유머" in humor:
             st.session_state.style_scores["dark"] += 1
