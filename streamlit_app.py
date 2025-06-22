@@ -133,10 +133,13 @@ if prompt:
         st.markdown(prompt)
 
     full_response = ""
+    copy_button = copy_col.button("📋 복사", key="copy_button")
     response_box = st.empty()
 
     with st.chat_message("assistant"):
-        with st.spinner("배꼽 터지는 중... 🤣"):
+        copy_col, response_col = st.columns([0.1, 0.9])
+        with response_col:
+            with st.spinner("배꼽 터지는 중... 🤣"):
             stream = client.chat.completions.create(
                 model="gpt-4o",
                 messages=st.session_state.messages,
@@ -147,6 +150,9 @@ if prompt:
                     content = chunk.choices[0].delta.content
                     full_response += content
                     response_box.markdown(full_response)
+            if copy_button and full_response:
+                st.session_state.clipboard = full_response
+                st.toast("복사되었습니다!", icon="📋")
 
     # ✅ 스트리밍 완료 후 저장 버튼 노출 및 디버깅 출력
     if full_response and not st.session_state.response_saved:
