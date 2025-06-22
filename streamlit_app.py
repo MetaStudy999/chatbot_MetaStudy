@@ -82,7 +82,6 @@ if "initialized" not in st.session_state:
     st.session_state.greeted = False
     st.session_state.response_saved = False
     st.session_state.pending_prompt = None
-    # 저장된 농담 로드
     try:
         with open("saved_jokes.json", "r") as f:
             st.session_state.saved_jokes = json.load(f)
@@ -112,20 +111,18 @@ if not st.session_state.greeted:
             st.session_state.pending_prompt = q
             st.session_state.greeted = True
 
-# 항상 표시되는 대화 입력창
 prompt_input = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
 
-# 채팅 처리
 if prompt_input or (st.session_state.get("pending_prompt") is not None):
     prompt = st.session_state.pop("pending_prompt", None) or prompt_input
     st.session_state.messages.append({"role": "user", "content": prompt})
     if len(st.session_state.messages) > st.session_state.max_messages:
         st.session_state.messages = st.session_state.messages[-st.session_state.max_messages:]
     with st.chat_message("user"):
-        st.markdown(html.escape(prompt))  # 사용자 입력 이스케이프
+        st.markdown(html.escape(prompt))
 
     full_response = ""
-    st.session_state.response_saved = False  # 저장 플래그 리셋
+    st.session_state.response_saved = False
     with st.chat_message("assistant"):
         response_box = st.empty()
         with st.spinner("배꼽 터지는 중... 🤣"):
@@ -146,15 +143,18 @@ if prompt_input or (st.session_state.get("pending_prompt") is not None):
 
         if full_response:
             copy_col, response_col = st.columns([0.1, 0.9])
-            if copy_col.button("📋 다운로드", key="download_button", help="응답을 파일로 다운로드"):
-                st.download_button(
-                    label="📥 다운로드",
-                    data=full_response,
-                    file_name="response.txt",
-                    mime="text/plain",
-                    key="download_response"
-                )
-                st.success("✅ 응답이 텍스트 파일로 다운로드되었습니다!")
+            with copy_col:
+                copy_code = f"""
+                <button onclick="navigator.clipboard.writeText(`{full_response}`)" style="
+                    background-color: #2ecc71;
+                    color: white;
+                    border: none;
+                    padding: 8px 12px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                ">📋 복사</button>
+                """
+                st.markdown(copy_code, unsafe_allow_html=True)
 
     if full_response and not st.session_state.response_saved:
         if st.button("⭐ 이 유머 저장하기", key="save_joke_button", help="이 유머를 저장"):
@@ -182,7 +182,6 @@ if prompt_input or (st.session_state.get("pending_prompt") is not None):
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-# 저장된 농담 표시
 if st.session_state.saved_jokes:
     with st.expander("💾 저장된 유머 보기", expanded=False):
         for i, joke in enumerate(st.session_state.saved_jokes):
@@ -197,14 +196,12 @@ if st.session_state.saved_jokes:
                     st.error(f"유머 삭제 중 오류 발생: {str(e)}")
                 st.rerun()
 
-# 유머 스타일 통계
 if any(st.session_state.style_scores.values()):
     st.subheader("📊 유머 스타일 통계")
     st.bar_chart(st.session_state.style_scores)
 
-# 대화 초기화 버튼
 if st.button("🔄 대화 초기화", help="대화 기록과 상태 초기화"):
     st.session_state.clear()
-    st.session_state.messages = [{"role": "system", "content": system_prompt}]  # 시스템 프롬프트만 유지
+    st.session_state.messages = [{"role": "system", "content": system_prompt}]
     st.success("대화가 초기화되었습니다!")
     st.rerun()
