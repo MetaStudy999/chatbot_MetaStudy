@@ -6,14 +6,13 @@ import html
 from openai import OpenAI
 from dotenv import load_dotenv
 import logging
-import pyperclip  # 추가: 클립보드 복사를 위한 라이브러리
 
 # 환경 변수 로드
 load_dotenv()
 
 # 기본 설정
 st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
-st.title("😂 배꼽봇 (BaekkopBot)")
+st.title("😂 배꼽�ot (BaekkopBot)")
 
 # 로고 이미지 로드
 try:
@@ -75,7 +74,8 @@ client = st.session_state.openai_client
 # 상태 초기화
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
-    st.session_state.messages = [{"role": "system", "content": system_prompt}]
+    if "messages" not in st.session_state:
+        st.session_state.messages = [{"role": "system", "content": system_prompt}]
     st.session_state.max_messages = 30
     st.session_state.saved_jokes = []
     st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
@@ -111,7 +111,6 @@ if not st.session_state.greeted:
         if st.button(f"💭 {q}", key=f"btn{i}", help=f"예시 질문: {q}"):
             st.session_state.pending_prompt = q
             st.session_state.greeted = True
-            st.rerun()
 
 # 항상 표시되는 대화 입력창
 prompt_input = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂")
@@ -147,12 +146,15 @@ if prompt_input or (st.session_state.get("pending_prompt") is not None):
 
         if full_response:
             copy_col, response_col = st.columns([0.1, 0.9])
-            if copy_col.button("📋 복사", key="copy_button", help="응답을 클립보드에 복사"):
-                try:
-                    pyperclip.copy(full_response)
-                    st.success("✅ 응답이 클립보드에 복사되었습니다!")
-                except Exception as e:
-                    st.error(f"복사 중 오류 발생: {str(e)}")
+            if copy_col.button("📋 다운로드", key="download_button", help="응답을 파일로 다운로드"):
+                st.download_button(
+                    label="📥 다운로드",
+                    data=full_response,
+                    file_name="response.txt",
+                    mime="text/plain",
+                    key="download_response"
+                )
+                st.success("✅ 응답이 텍스트 파일로 다운로드되었습니다!")
 
     if full_response and not st.session_state.response_saved:
         if st.button("⭐ 이 유머 저장하기", key="save_joke_button", help="이 유머를 저장"):
@@ -203,5 +205,6 @@ if any(st.session_state.style_scores.values()):
 # 대화 초기화 버튼
 if st.button("🔄 대화 초기화", help="대화 기록과 상태 초기화"):
     st.session_state.clear()
+    st.session_state.messages = [{"role": "system", "content": system_prompt}]  # 시스템 프롬프트만 유지
     st.success("대화가 초기화되었습니다!")
     st.rerun()
