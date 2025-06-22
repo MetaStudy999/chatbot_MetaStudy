@@ -51,7 +51,7 @@ if not openai_api_key:
 else:
     openai.api_key = openai_api_key
 
-    # 인사말 & 예시 질문
+    # 초기 데이터
     greetings = [
         "🌱 지구를 아끼는 당신, 오늘도 배꼽은 챙기셨나요?\n♻️ 웃음은 무한 재생 가능 자원이에요!\n😄 지금부터 탄소 대신 개그를 배출합니다!",
         "🌍 환영합니다! 지구를 위한 작은 미소, 여기서 시작돼요.\n🚲 오늘도 배꼽봇과 함께 웃음 탄소중립 도전!\n😆 '지구야 미안해~ 나 오늘 또 웃을 거야!'",
@@ -65,7 +65,7 @@ else:
         "세계에서 제일 웃긴 농담 알려줘!"
     ]
 
-    # 세션 상태 초기화
+    # 세션 초기화
     if "initialized" not in st.session_state:
         st.session_state.initialized = True
         st.session_state.messages = [{"role": "system", "content": system_prompt}]
@@ -73,19 +73,20 @@ else:
         st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
         st.session_state.greeted = False
         st.session_state.response_saved = False
+        st.session_state.pending_prompt = None
 
-    # 초기 환영 메시지 & 예시 말풍선
+    # 초기 환영 메시지 & 예시 버튼
     if not st.session_state.greeted:
         with st.chat_message("assistant"):
             st.markdown(random.choice(greetings))
         st.markdown("#### 💬 이런 질문 해볼까요?")
         for i, q in enumerate(example_questions):
             if st.button(f"💭 {q}", key=f"btn{i}"):
-                st.session_state.messages.append({"role": "user", "content": q})
+                st.session_state.pending_prompt = q
                 st.session_state.greeted = True
-                st.rerun()  # ✅ 최신 Streamlit용 (1.27+)
+                st.rerun()
 
-    # 사이드바
+    # 사이드바: 저장 유머, 점수, 다운로드
     with st.sidebar:
         st.markdown("### ⭐ 저장한 유머")
         for idx, joke in enumerate(st.session_state.saved_jokes, 1):
@@ -108,24 +109,23 @@ else:
             data = json.dumps({"jokes": st.session_state.saved_jokes}, ensure_ascii=False)
             st.download_button("JSON 다운로드", data, file_name="saved_jokes.json")
 
-        # 유머 취향 점수 그래프
         fig, ax = plt.subplots()
         ax.bar(st.session_state.style_scores.keys(), st.session_state.style_scores.values(), color=["#f1c40f", "#2ecc71", "#e74c3c"])
         ax.set_title("유머 취향 점수")
         st.pyplot(fig)
 
-    # 이전 메시지 출력
+    # 이전 대화 출력
     for msg in st.session_state.messages[1:]:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # 사용자 입력
-    if prompt := st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂"):
+    # 사용자 입력 또는 말풍선 전달된 질문
+    prompt = st.session_state.pop("pending_prompt", None) or st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😄")
+    if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # GPT 응답 수동 스트리밍
         full_response = ""
         with st.chat_message("assistant"):
             with st.spinner("배꼽 터지는 중... 🤣"):
@@ -139,21 +139,20 @@ else:
                     full_response += content
                     st.markdown(content)
 
-            # 저장 버튼 (1회만)
-            if not st.session_state.response_saved and st.button("⭐ 이 유머 저장하기"):
-                st.session_state.saved_jokes.append(full_response)
-                st.session_state.response_saved = True
+        if not st.session_state.response_saved and st.button("⭐ 이 유머 저장하기"):
+            st.session_state.saved_jokes.append(full_response)
+            st.session_state.response_saved = True
 
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                if st.button("😂 아재개그 스타일!"):
-                    st.session_state.style_scores["dad_joke"] += 1
-            with col2:
-                if st.button("😶 넌센스 같아요"):
-                    st.session_state.style_scores["nonsense"] += 1
-            with col3:
-                if st.button("😈 블랙유머 느낌"):
-                    st.session_state.style_scores["dark"] += 1
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("😂 아재개그 스타일!"):
+                st.session_state.style_scores["dad_joke"] += 1
+        with col2:
+            if st.button("😶 넌센스 같아요"):
+                st.session_state.style_scores["nonsense"] += 1
+        with col3:
+            if st.button("😈 블랙유머 느낌"):
+                st.session_state.style_scores["dark"] += 1
 
         st.session_state.messages.append({"role": "assistant", "content": full_response})
-        st.session_state.response_saved = False  # 다음 응답을 위해 리셋
+        st.session_state.response_saved = False
