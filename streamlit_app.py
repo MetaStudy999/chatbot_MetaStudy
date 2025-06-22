@@ -1,8 +1,8 @@
 import streamlit as st
+import openai
 import random
 import json
 import matplotlib.pyplot as plt
-from openai import OpenAI
 
 st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
 st.title("😂 배꼽봇 (BaekkopBot)")
@@ -44,13 +44,14 @@ else:
     사용자에게 웃음을 주는 농담, 퀴즈, 밈 등을 상황에 맞게 유쾌하게 전달해 주세요.
     """
 
-# OpenAI API 키 입력
+# API 키 입력
 openai_api_key = st.text_input("🔑 OpenAI API Key", type="password")
 if not openai_api_key:
     st.info("API 키를 입력해 주세요.", icon="🗝️")
 else:
-    client = OpenAI(api_key=openai_api_key)
+    openai.api_key = openai_api_key
 
+    # 인사말 & 예시 질문
     greetings = [
         "🌱 지구를 아끼는 당신, 오늘도 배꼽은 챙기셨나요?\n♻️ 웃음은 무한 재생 가능 자원이에요!\n😄 지금부터 탄소 대신 개그를 배출합니다!",
         "🌍 환영합니다! 지구를 위한 작은 미소, 여기서 시작돼요.\n🚲 오늘도 배꼽봇과 함께 웃음 탄소중립 도전!\n😆 '지구야 미안해~ 나 오늘 또 웃을 거야!'",
@@ -64,16 +65,17 @@ else:
         "세계에서 제일 웃긴 농담 알려줘!"
     ]
 
-    # 최초 1회만 초기화
+    # 세션 상태 초기화
     if "initialized" not in st.session_state:
+        st.session_state.initialized = True
         st.session_state.messages = [{"role": "system", "content": system_prompt}]
         st.session_state.saved_jokes = []
         st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
-        st.session_state.initialized = True
         st.session_state.greeted = False
+        st.session_state.response_saved = False
 
-    # 환영 인사 + 말풍선은 greeted가 False일 때만 출력
-    if not st.session_state.get("greeted", False):
+    # 초기 환영 메시지 & 예시 말풍선
+    if not st.session_state.greeted:
         with st.chat_message("assistant"):
             st.markdown(random.choice(greetings))
         st.markdown("#### 💬 이런 질문 해볼까요?")
@@ -81,9 +83,9 @@ else:
             if st.button(f"💭 {q}", key=f"btn{i}"):
                 st.session_state.messages.append({"role": "user", "content": q})
                 st.session_state.greeted = True
-                st.experimental_rerun()  # ✅ 안정적 rerun 사용
+                st.experimental_rerun()
 
-    # 사이드바 저장 유머 보기
+    # 사이드바
     with st.sidebar:
         st.markdown("### ⭐ 저장한 유머")
         for idx, joke in enumerate(st.session_state.saved_jokes, 1):
@@ -98,15 +100,15 @@ else:
             return f"당신은 **{label[top]} 스타일** 유머를 좋아하시는군요! 😎"
         st.markdown(get_humor_type(st.session_state.style_scores))
 
-        # 다운로드
         if st.button("📥 저장 유머 TXT"):
             text = "\n\n".join(st.session_state.saved_jokes)
             st.download_button("TXT 다운로드", text, file_name="saved_jokes.txt")
+
         if st.button("📥 저장 유머 JSON"):
             data = json.dumps({"jokes": st.session_state.saved_jokes}, ensure_ascii=False)
             st.download_button("JSON 다운로드", data, file_name="saved_jokes.json")
 
-        # 점수 그래프
+        # 유머 취향 점수 그래프
         fig, ax = plt.subplots()
         ax.bar(st.session_state.style_scores.keys(), st.session_state.style_scores.values(), color=["#f1c40f", "#2ecc71", "#e74c3c"])
         ax.set_title("유머 취향 점수")
@@ -117,30 +119,41 @@ else:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # 사용자 질문 입력
+    # 사용자 입력
     if prompt := st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        stream = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=st.session_state.messages,
-            stream=True
-        )
-
+        # GPT 응답 수동 스트리밍
+        full_response = ""
         with st.chat_message("assistant"):
-            response = st.write_stream(stream)
+            with st.spinner("배꼽 터지는 중... 🤣"):
+                stream = openai.ChatCompletion.create(
+                    model="gpt-4o",
+                    messages=st.session_state.messages,
+                    stream=True
+                )
+                for chunk in stream:
+                    content = chunk.choices[0].delta.get("content", "")
+                    full_response += content
+                    st.markdown(content)
 
-            if st.button("⭐ 이 유머 저장하기"):
-                st.session_state.saved_jokes.append(response)
+            # 저장 버튼 (1회만)
+            if not st.session_state.response_saved and st.button("⭐ 이 유머 저장하기"):
+                st.session_state.saved_jokes.append(full_response)
+                st.session_state.response_saved = True
 
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
-                if st.button("😂 웃겼어요"):
+                if st.button("😂 아재개그 스타일!"):
                     st.session_state.style_scores["dad_joke"] += 1
             with col2:
-                if st.button("😐 별로예요"):
+                if st.button("😶 넌센스 같아요"):
                     st.session_state.style_scores["nonsense"] += 1
+            with col3:
+                if st.button("😈 블랙유머 느낌"):
+                    st.session_state.style_scores["dark"] += 1
 
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
+        st.session_state.response_saved = False  # 다음 응답을 위해 리셋
