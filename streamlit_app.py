@@ -83,7 +83,7 @@ else:
             if st.button(f"💭 {q}", key=f"btn{i}"):
                 st.session_state.messages.append({"role": "user", "content": q})
                 st.session_state.greeted = True
-                st.experimental_rerun()
+                st.rerun()  # ✅ 최신 Streamlit용 (1.27+)
 
     # 사이드바
     with st.sidebar:
