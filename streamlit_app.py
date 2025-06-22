@@ -148,12 +148,16 @@ if prompt:
                     full_response += content
                     response_box.markdown(full_response)
 
-    # ✅ 스트리밍 완료 후 저장 버튼 노출
+    # ✅ 스트리밍 완료 후 저장 버튼 노출 및 디버깅 출력
     if full_response and not st.session_state.response_saved:
+        st.write("DEBUG: 저장 버튼 활성화됨")
         if st.button("⭐ 이 유머 저장하기"):
+            st.write("DEBUG: 저장 시도됨")
+            st.write("DEBUG: full_response =", full_response)
             if full_response not in st.session_state.saved_jokes:
                 st.session_state.saved_jokes.append(full_response)
                 st.success("✅ 유머가 저장되었어요!")
+            st.write("DEBUG: saved_jokes =", st.session_state.saved_jokes)
             st.session_state.response_saved = True
 
     humor = st.radio("유머 스타일을 선택해 주세요:",
@@ -168,4 +172,3 @@ if prompt:
             st.session_state.style_scores["dark"] += 1
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
-    st.session_state.response_saved = False
