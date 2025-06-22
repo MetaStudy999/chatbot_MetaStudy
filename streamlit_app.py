@@ -128,8 +128,12 @@ if prompt_input:
                         full_response += content
                         response_box.markdown(full_response)
             if copy_button and full_response:
-                st.session_state.clipboard = full_response
-                st.toast("복사되었습니다!", icon="📋")
+    st.components.v1.html(f"""
+        <script>
+        navigator.clipboard.writeText(`{full_response}`)
+            .then(() => alert("📋 복사되었습니다!"));
+        </script>
+    """, height=0)
 
     if full_response and not st.session_state.response_saved:
         if st.button("⭐ 이 유머 저장하기", key="save_joke_button"):
