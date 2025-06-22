@@ -148,7 +148,8 @@ if prompt:
                     full_response += content
                     response_box.markdown(full_response)
 
-    if not st.session_state.response_saved:
+    # ✅ 스트리밍 완료 후 저장 버튼 노출
+    if full_response and not st.session_state.response_saved:
         if st.button("⭐ 이 유머 저장하기"):
             if full_response not in st.session_state.saved_jokes:
                 st.session_state.saved_jokes.append(full_response)
