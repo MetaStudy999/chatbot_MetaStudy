@@ -128,7 +128,7 @@ if prompt_input:
                         full_response += content
                         response_box.markdown(full_response)
             if copy_button and full_response:
-    st.components.v1.html(f"""
+                st.components.v1.html(f"""
         <script>
         navigator.clipboard.writeText(`{full_response}`)
             .then(() => alert("📋 복사되었습니다!"));
