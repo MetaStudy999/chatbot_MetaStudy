@@ -1,4 +1,4 @@
 streamlit
 openai
 matplotlib
-load_dotenv
+python-dotenv
