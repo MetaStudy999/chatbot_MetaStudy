@@ -12,7 +12,7 @@ load_dotenv()
 
 # 기본 설정
 st.set_page_config(page_title="😂 배꼽봇", page_icon="😜")
-st.title("😂 배꼽�ot (BaekkopBot)")
+st.title("😂 배꼽봇 (BaekkopBot)")
 
 # 로고 이미지 로드
 try:
