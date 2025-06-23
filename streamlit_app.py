@@ -3,6 +3,10 @@ from openai import OpenAI
 
 # 챗봇 이름 및 설명
 st.set_page_config(page_title="배꼽봇 😂", page_icon="😂")
+
+# 로고 이미지 삽입 (파일은 같은 디렉토리에 있어야 함)
+st.image("logo.png", width=150)  # 필요시 width 값 조정 가능
+
 st.title("😂 배꼽봇 (BaekkopBot)")
 st.markdown("""
 **“당신을 웃게 만드는 단 한 명의 개그 친구, 배꼽봇!”**  
