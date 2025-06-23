@@ -43,7 +43,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 로고 이미지
+# 로고
 try:
     st.image("logo.png", caption="🌱 웃음 충전 중... 배꼽봇과 함께 😄", use_container_width=True)
 except FileNotFoundError:
@@ -64,7 +64,7 @@ else:
     st.error("지원되지 않는 언어입니다.")
     st.stop()
 
-# OpenAI API 키 입력
+# OpenAI API 키
 api_key_env = os.getenv("OPENAI_API_KEY")
 openai_api_key = st.sidebar.text_input("🔑 OpenAI API Key", type="password", value=api_key_env or "")
 if not openai_api_key:
@@ -78,7 +78,7 @@ if "openai_client" not in st.session_state:
         st.stop()
 client = st.session_state.openai_client
 
-# 세션 초기화
+# 상태 초기화
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
     st.session_state.messages = [{"role": "system", "content": system_prompt}]
@@ -86,8 +86,9 @@ if "initialized" not in st.session_state:
     st.session_state.style_scores = {"dad_joke": 0, "nonsense": 0, "dark": 0}
     st.session_state.greeted = False
     st.session_state.pending_prompt = None
+    st.session_state.generated_text = ""
 
-# 첫 인사 & 예시 질문
+# 첫 인사 및 예시 질문
 greetings = [
     "🌱 지구를 아끼는 당신, 오늘도 배꼽은 챙기셨나요?",
     "🌍 환영합니다! 지구를 위한 작은 미소, 여기서 시작돼요.",
@@ -110,7 +111,7 @@ if not st.session_state.greeted:
             st.session_state.pending_prompt = q
             st.session_state.greeted = True
 
-# 유저 입력
+# 사용자 입력
 prompt_input = st.chat_input("웃음이 필요할 땐 말 걸어 보세요! 😂", max_chars=500)
 
 if prompt_input or st.session_state.get("pending_prompt"):
@@ -153,15 +154,18 @@ if prompt_input or st.session_state.get("pending_prompt"):
                 st.error(f"OpenAI API 호출 중 오류 발생: {str(e)}. 로그를 확인하세요.")
                 st.stop()
 
-        # 복사 기능 적용
-        st.markdown("##### 🤖 배꼽봇의 응답")
-        st.text_area("📝 유머 내용", value=full_response, height=150, key="response_display")
+        st.session_state.generated_text = full_response  # 👉 복사용 텍스트 저장
 
-        if st.button("📋 복사하기", key="copy_button"):
-            st.toast("복사되었습니다! 클립보드에서 확인해 보세요. 😊")
-            st.session_state.copy_script = full_response
+# 이전 결과가 있다면 항상 표시
+if st.session_state.generated_text:
+    st.markdown("##### 🤖 배꼽봇의 응답")
+    st.text_area("📝 유머 내용", value=st.session_state.generated_text, height=150, disabled=True)
 
-    # 유머 스타일 선택
+    if st.button("📋 복사하기"):
+        st.toast("복사되었습니다! 클립보드에서 확인해 보세요. 😊")
+
+# 유머 스타일 선택
+if st.session_state.generated_text:
     humor = st.radio("유머 스타일을 선택해 주세요:", ["😂 아재개그 스타일!", "😶 넌센스 같아요", "😈 블랙유머 느낌"], index=None, key=f"humor_choice_{len(st.session_state.messages)}")
     if humor:
         if "아재개그" in humor:
@@ -170,10 +174,9 @@ if prompt_input or st.session_state.get("pending_prompt"):
             st.session_state.style_scores["nonsense"] += 1
         elif "블랙유머" in humor:
             st.session_state.style_scores["dark"] += 1
+        st.session_state.messages.append({"role": "assistant", "content": st.session_state.generated_text})
 
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
-
-# 통계 차트
+# 통계 출력
 if any(st.session_state.style_scores.values()):
     st.subheader("📊 유머 스타일 통계")
     st.bar_chart(st.session_state.style_scores)
