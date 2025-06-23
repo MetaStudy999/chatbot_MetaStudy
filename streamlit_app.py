@@ -58,14 +58,13 @@ if not openai_api_key:
     st.info("사이드바에서 OpenAI API 키를 입력해 주세요.", icon="🗝️")
     st.stop()
 
-# OpenAI 클라이언트 설정
+# OpenAI 클라이언트
 client = OpenAI(api_key=openai_api_key)
 
 # 세션 상태 초기화
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# 클릭된 문구 저장
 if "clicked_greeting" not in st.session_state:
     st.session_state.clicked_greeting = None
 
@@ -82,27 +81,35 @@ if st.session_state.messages:
 else:
     st.session_state.messages = [system_msg]
 
-# 이전 대화 출력
+# 이전 메시지 출력
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 유머 문구 버튼
+# 연령대 문구 버튼 출력
 st.markdown(f"👉 선택한 연령대: **{selected_age}**")
 st.markdown("#### 🎯 유머 소개 문구 중 하나를 눌러보세요:")
 
 for msg in age_greetings[selected_age]:
     if st.session_state.clicked_greeting == msg:
-        st.button(msg, disabled=True, key=msg)  # 비활성화 상태로 보여주기만
+        st.button(msg, disabled=True, key=msg)
     else:
         if st.button(msg, key=msg):
             st.session_state.clicked_greeting = msg
+
+            # 채팅창에 입력한 것처럼 사용자 메시지 출력
+            with st.chat_message("user"):
+                st.markdown(msg)
+
             st.session_state.messages.append({"role": "user", "content": msg})
 
-            # GPT 응답 생성 및 출력
+            # GPT 응답 생성
             stream = client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
+                messages=[
+                    {"role": m["role"], "content": m["content"]}
+                    for m in st.session_state.messages
+                ],
                 stream=True,
             )
             with st.chat_message("assistant"):
@@ -110,7 +117,7 @@ for msg in age_greetings[selected_age]:
 
             st.session_state.messages.append({"role": "assistant", "content": response})
 
-# 사용자 입력창 처리
+# 사용자 직접 입력 처리
 if prompt := st.chat_input("웃음이 필요할 땐? 여기에 써 보세요! 😆"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -123,4 +130,5 @@ if prompt := st.chat_input("웃음이 필요할 땐? 여기에 써 보세요! �
     )
     with st.chat_message("assistant"):
         response = st.write_stream(stream)
+
     st.session_state.messages.append({"role": "assistant", "content": response})
