@@ -15,6 +15,12 @@ load_dotenv()
 st.set_page_config(page_title="😂 배꼽봇", page_icon="😜", layout="wide")
 st.title("😂 배꼽봇 (BaekkopBot)")
 
+# ---------------------- 로고 이미지 ----------------------
+try:
+    st.image("logo.png", caption="🌱 웃음 충전 중... 배꼽봇과 함께 😄", use_container_width=True)
+except FileNotFoundError:
+    st.warning("로고 이미지를 찾을 수 없습니다! 'logo.png' 파일을 현재 폴더에 추가해 주세요.")
+
 # ---------------------- 테마 설정 ----------------------
 theme = st.sidebar.selectbox("🎨 테마 선택", ["기본", "다크", "자연", "파스텔"])
 
@@ -91,8 +97,8 @@ if st.session_state.generated_text:
     # 자동 복사 JS 버튼
     st.markdown(f"""
     <div>
-        <textarea id="copyText" style="position: absolute; left: -9999px;">{st.session_state.generated_text}</textarea>
-        <button id="copyBtn" onclick="
+        <textarea id=\"copyText\" style=\"position: absolute; left: -9999px;\">{st.session_state.generated_text}</textarea>
+        <button id=\"copyBtn\" onclick=\"
             const text = document.getElementById('copyText').value;
             navigator.clipboard.writeText(text).then(() => {{
                 const msg = document.createElement('div');
@@ -108,7 +114,7 @@ if st.session_state.generated_text:
                 document.body.appendChild(msg);
                 setTimeout(() => msg.remove(), 2000);
             }});
-        " style="
+        \" style=\"
             padding: 10px 20px;
             background-color: {colors['bg']};
             color: white;
@@ -116,7 +122,7 @@ if st.session_state.generated_text:
             border-radius: 20px;
             cursor: pointer;
             font-size: 16px;
-        " onmouseover="this.style.backgroundColor='{colors['hover']}';" onmouseout="this.style.backgroundColor='{colors['bg']}';">
+        \" onmouseover=\"this.style.backgroundColor='{colors['hover']}';\" onmouseout=\"this.style.backgroundColor='{colors['bg']}';\">
             📋 감성 복사하기
         </button>
     </div>
@@ -141,8 +147,8 @@ if st.session_state.generated_text:
     # 공유 버튼
     share_url = f"https://story.kakao.com/share?url=https://your-app.com&text={st.session_state.generated_text}"
     st.markdown(f"""
-        <a href="{share_url}" target="_blank">
-            <button style="background:#FEE500;padding:10px 20px;border:none;border-radius:12px;font-weight:bold;cursor:pointer;">
+        <a href=\"{share_url}\" target=\"_blank\">
+            <button style=\"background:#FEE500;padding:10px 20px;border:none;border-radius:12px;font-weight:bold;cursor:pointer;\">
                 📤 카카오톡으로 공유하기
             </button>
         </a>
