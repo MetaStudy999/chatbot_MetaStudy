@@ -1,13 +1,20 @@
 import streamlit as st
 from openai import OpenAI
 
-# 챗봇 이름 및 설명
+# 페이지 설정 및 로고
 st.set_page_config(page_title="배꼽봇 😂", page_icon="😂")
-
-# 로고 이미지 삽입 (파일은 같은 디렉토리에 있어야 함)
-st.image("logo.png", width=700)  # 필요시 width 값 조정 가능
+st.image("logo.png", width=700)
 
 st.title("😂 배꼽봇 (BaekkopBot)")
+
+# 연령대 선택
+age_group = st.selectbox(
+    "당신의 연령대를 선택해 주세요 😊",
+    ["청년 (20~30대)", "중년 (40~50대)", "장년 (60대)", "노년 (70대 이상)"]
+)
+
+st.markdown(f"👉 선택한 연령대: **{age_group}**")
+
 st.markdown("""
 **“당신을 웃게 만드는 단 한 명의 개그 친구, 배꼽봇!”**  
 피곤한 하루에 한 줄의 농담, 스트레스를 날려줄 찐친 유머 챗봇!  
@@ -29,7 +36,7 @@ else:
 
     # 세션 상태 초기화
     if "messages" not in st.session_state:
-        st.session_state.messages = []
+        st.session_state.messages = [{"role": "system", "content": f"사용자의 연령대는 '{age_group}'입니다. 이에 맞는 유머 스타일로 응답해 주세요."}]
 
     # 이전 메시지 출력
     for message in st.session_state.messages:
