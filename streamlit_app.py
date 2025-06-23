@@ -5,7 +5,7 @@ from openai import OpenAI
 st.set_page_config(page_title="배꼽봇 😂", page_icon="😂")
 
 # 로고 이미지 삽입 (파일은 같은 디렉토리에 있어야 함)
-st.image("logo.png", width=150)  # 필요시 width 값 조정 가능
+st.image("logo.png", width=600)  # 필요시 width 값 조정 가능
 
 st.title("😂 배꼽봇 (BaekkopBot)")
 st.markdown("""
