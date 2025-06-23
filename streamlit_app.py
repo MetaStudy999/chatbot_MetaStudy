@@ -1,8 +1,3 @@
-물론이죠! Streamlit에서 왼쪽 네비게이션 창(사이드바)을 만들려면 `st.sidebar`를 사용하면 됩니다. 연령대 선택, API 키 입력 같은 항목을 사이드바로 옮기면 메인 화면이 더 깔끔해집니다.
-
-아래는 사이드바를 적용한 수정 예입니다:
-
-```python
 import streamlit as st
 from openai import OpenAI
 
@@ -74,6 +69,3 @@ else:
             response = st.write_stream(stream)
 
         st.session_state.messages.append({"role": "assistant", "content": response})
-```
-
-이제 왼쪽 사이드바에 연령대와 API 키 입력창이 생기고, 메인 페이지는 유머 인터페이스에 집중할 수 있게 됩니다. 필요한 경우 사이드바에 버튼이나 링크도 추가 가능합니다.
